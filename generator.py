@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pyarrow.dataset as ds
 from datetime import datetime, timedelta
 from faker import Faker
 
@@ -114,25 +115,36 @@ def write_partitioned_parquet(rows):
         "is_fraud", "device", "ip_address", "user_agent", "discount_code"
     ])
 
+    df = df.dropna(subset=["event_timestamp"])
+
     # Convertir timestamp
     df["event_timestamp"] = pd.to_datetime(
         df["event_timestamp"], errors="coerce")
 
     # Crear columnas de partición
-    df["year"] = df["event_timestamp"].dt.year
-    df["month"] = df["event_timestamp"].dt.month
-    df["day"] = df["event_timestamp"].dt.day
+    df["year"] = df["event_timestamp"].dt.year.astype(int)
+    df["month"] = f"{df["event_timestamp"].dt.month.astype(int)}".zfill(2)
+    df["day"] = f"{df["event_timestamp"].dt.day.astype(int)}".zfill(2)
 
     # Escribir particionado
-    # Registro malo: Escribiendo partición: year=2024.0, month=4.0, day=3.0 con 74 filas
-    for (y, m, d), group in df.groupby(["year", "month", "day"]):
-        print(
-            f"Escribiendo partición: year={y}, month={m}, day={d} con {len(group)} filas")
-        path = f"data/year={y}/month={m:02d}/day={d:02d}"
-        # os.makedirs(path, exist_ok=True)
+    table = pa.Table.from_pandas(df)
+
+    # Escritura particionada
+    ds.write_dataset(
+        data=table,
+        base_dir="data/",
+        format="parquet",
+        partitioning=["year", "month", "day"],
+        existing_data_behavior="overwrite_or_ignore"
+    )
+    # for (y, m, d), group in df.groupby(["year", "month", "day"]):
+    #    print(
+    #        f"Escribiendo partición: year={y}, month={m}, day={d} con {len(group)} filas")
+    #    path = f"data/year={y}/month={m:02d}/day={d:02d}"
+    #    os.makedirs(path, exist_ok=True)
 #
-        # file_path = f"{path}/data.parquet"
-        # group.to_parquet(file_path, index=False)
+    #    file_path = f"{path}/data.parquet"
+    #    group.to_parquet(file_path, index=False)
 
 
 def write_partitioned():
