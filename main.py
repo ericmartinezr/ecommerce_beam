@@ -2,6 +2,7 @@ import apache_beam as beam
 import pyarrow as pa
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam import pvalue
+from apache_beam.runners.render import RenderRunner
 
 # TODO: Analisis (averiguar libreria para hacerlo local)
 
@@ -57,7 +58,7 @@ class Masking(beam.DoFn):
 
 def run():
 
-    options = PipelineOptions(runner='DirectRunner')
+    options = PipelineOptions(runner=RenderRunner())
 
     columns = ["name", "email", "phone", "address",
                "country", "signup_date", "event_timestamp", "product",
@@ -70,7 +71,7 @@ def run():
         ("phone", pa.string()),
         ("address", pa.string()),
         ("country", pa.string()),
-        ("signup_date", pa.string()),  # or pa.date32() if you convert it
+        ("signup_date", pa.string()),
         ("event_timestamp", pa.timestamp("us")),
         ("product", pa.string()),
         ("category", pa.string()),
@@ -115,8 +116,6 @@ def run():
         #
         masking | "Write normalized data" >> beam.io.WriteToParquet(
             'output/normalized_data.parquet', schema=schema)
-
-        # beam.io.WriteToText(   'output/normalized_data.txt')
 
         normalization.errors | "Write errors" >> beam.io.WriteToText(
             'output/errors.txt')
