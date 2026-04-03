@@ -115,16 +115,16 @@ def write_partitioned_parquet(rows):
         "is_fraud", "device", "ip_address", "user_agent", "discount_code"
     ])
 
-    df = df.dropna(subset=["event_timestamp"])
-
     # Convertir timestamp
     df["event_timestamp"] = pd.to_datetime(
         df["event_timestamp"], errors="coerce")
 
+    df = df.dropna(subset=["event_timestamp"])
+
     # Crear columnas de partición
     df["year"] = df["event_timestamp"].dt.year.astype(int)
-    df["month"] = f"{df["event_timestamp"].dt.month.astype(int)}".zfill(2)
-    df["day"] = f"{df["event_timestamp"].dt.day.astype(int)}".zfill(2)
+    df["month"] = df["event_timestamp"].dt.strftime("%m")
+    df["day"] = df["event_timestamp"].dt.strftime("%d")
 
     # Escribir particionado
     table = pa.Table.from_pandas(df)
@@ -137,20 +137,11 @@ def write_partitioned_parquet(rows):
         partitioning=["year", "month", "day"],
         existing_data_behavior="overwrite_or_ignore"
     )
-    # for (y, m, d), group in df.groupby(["year", "month", "day"]):
-    #    print(
-    #        f"Escribiendo partición: year={y}, month={m}, day={d} con {len(group)} filas")
-    #    path = f"data/year={y}/month={m:02d}/day={d:02d}"
-    #    os.makedirs(path, exist_ok=True)
-#
-    #    file_path = f"{path}/data.parquet"
-    #    group.to_parquet(file_path, index=False)
 
 
 def write_partitioned():
-    for _ in range(NUM_ROWS // CHUNK_SIZE):
-        rows = [generate_row() for _ in range(CHUNK_SIZE)]
-        write_partitioned_parquet(rows)
+    rows = [generate_row() for _ in range(CHUNK_SIZE)]
+    write_partitioned_parquet(rows)
 
 
 if __name__ == "__main__":
