@@ -8,7 +8,23 @@ Simula eventos de compras o intento de compras de un sistema ficticio de e-comme
 
 # Faker
 
-Genera datos relacionados al proyecto
+Genera datos relacionados al proyecto.
+
+Usar
+
+```python
+python generator.py
+```
+
+Esto generará una estructura como
+
+```
+data/
+ └── 2024/
+      └── 03/
+           └── 02/
+                ├── part-0.parquet
+```
 
 # Apache Beam
 

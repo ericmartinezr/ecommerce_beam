@@ -1,50 +1,44 @@
-import logging
 import apache_beam as beam
+import pyarrow as pa
 from apache_beam.options.pipeline_options import PipelineOptions
-
-logging.basicConfig(
-    level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
-    filename='app.log'
-)
-
+from apache_beam import pvalue
 
 # TODO: Analisis (averiguar libreria para hacerlo local)
 
 
 class Normalization(beam.DoFn):
     def process(self, element):
-        logging.info(f"Normalizing element: {element}")
 
-        # Chile, chile, CL > CL
-        countries = {
-            'chile': 'CL',
-            'Chile': 'CL',
-            'Argentina': 'AR',
-            'argentina': 'AR',
-            'Peru': 'PE',
-            'peru': 'PE',
-        }
+        try:
+            countries = {
+                'chile': 'CL',
+                'Chile': 'CL',
+                'Argentina': 'AR',
+                'argentina': 'AR',
+                'Peru': 'PE',
+                'peru': 'PE',
+            }
 
-        # Normaliza los paises
-        if element['country'] in countries:
-            element['country'] = countries[element['country']]
+            # Normaliza los paises
+            if element['country'] in countries:
+                element['country'] = countries[element['country']]
 
-        # Normaliza la fecha de registro
-        if element['signup_date'] and 'T' in element['signup_date']:
-            element['signup_date'] = element['signup_date'].split('T')[0]
+            # Normaliza la fecha de registro
+            if element['signup_date'] and 'T' in element['signup_date']:
+                element['signup_date'] = element['signup_date'].split('T')[0]
 
-        logging.info(f"Element normalized: {element}")
-
-        yield element
+            yield element
+        except Exception as e:
+            print(f"Error processing element: {e}")
+            yield pvalue.TaggedOutput('errors', element)
 
 
 class Masking(beam.DoFn):
     def process(self, element):
-        logging.info(f"Masking element: {element}")
 
         # Enmascara el email
         if element['email']:
-            element['email'] = f'***@***.***'
+            element['email'] = '***@***.***'
 
         # Enmascara el telefono
         if element['phone']:
@@ -58,8 +52,6 @@ class Masking(beam.DoFn):
         if element['ip_address']:
             element['ip_address'] = '***.***.***.***'
 
-        logging.info(f"Element masked: {element}")
-
         yield element
 
 
@@ -71,6 +63,24 @@ def run():
                "country", "signup_date", "event_timestamp", "product",
                "category", "price", "quantity", "payment_method",
                "is_fraud", "device", "ip_address"]
+
+    schema = pa.schema([
+        ("name", pa.string()),
+        ("email", pa.string()),
+        ("phone", pa.string()),
+        ("address", pa.string()),
+        ("country", pa.string()),
+        ("signup_date", pa.string()),  # or pa.date32() if you convert it
+        ("event_timestamp", pa.timestamp("us")),
+        ("product", pa.string()),
+        ("category", pa.string()),
+        ("price", pa.float64()),
+        ("quantity", pa.int64()),
+        ("payment_method", pa.string()),
+        ("is_fraud", pa.bool_()),
+        ("device", pa.string()),
+        ("ip_address", pa.string()),
+    ])
 
     with beam.Pipeline(options=options) as p:
 
@@ -97,14 +107,19 @@ def run():
 
         # Normalizacion
         normalization = filter_invalid_emails | "Normalization" >> beam.ParDo(
-            Normalization())
+            Normalization()).with_outputs('errors', main='normalized')
 
         # Ensmascaramiento
-        masking = normalization | "Masking" >> beam.ParDo(Masking())
+        masking = normalization.normalized | "Masking" >> beam.ParDo(Masking())
 
-        masking | beam.Map(print)
+        #
+        masking | "Write normalized data" >> beam.io.WriteToParquet(
+            'output/normalized_data.parquet', schema=schema)
 
-    logging.info("Running the application...")
+        # beam.io.WriteToText(   'output/normalized_data.txt')
+
+        normalization.errors | "Write errors" >> beam.io.WriteToText(
+            'output/errors.txt')
 
 
 if __name__ == "__main__":
@@ -112,4 +127,3 @@ if __name__ == "__main__":
         run()
     except Exception as e:
         print(f"An error occurred: {e}")
-        logging.error(f"An error occurred: {e}", exc_info=True)
