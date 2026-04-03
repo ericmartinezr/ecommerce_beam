@@ -77,7 +77,7 @@ def run():
         # Lee los datos desde el archivo de entrada
         # Usa solo los campos necesarios para el proceso
         data = p | "Read data" >> beam.io.ReadFromParquet(
-            'dataset.parquet', columns=columns)
+            'data/**/*.parquet', columns=columns)
 
         # Elimina las transacciones fraudulentas
         filter_fraud = data | "Filter fraudulent transactions" >> beam.Filter(
