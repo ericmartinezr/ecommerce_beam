@@ -414,15 +414,5 @@ El siguiente gráfico fue generado automáticamente por el `RenderRunner` de Apa
 ![Graph del pipeline](ppl_graph.png)
 
 ---
+> 📝 La documentación de este README fue generada con asistencia de IA y revisada manualmente.
 
-## 🤝 Contribuciones
-
-Este es un proyecto personal de aprendizaje. Si encontrás algo para mejorar o querés agregar la parte de análisis, los PRs son bienvenidos.
-
----
-
-<div align="center">
-
-**Construido con Python · Apache Beam · PyArrow · Faker**
-
-</div>
