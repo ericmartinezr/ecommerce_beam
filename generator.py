@@ -106,5 +106,40 @@ def write_parquet():
     pq.write_table(table, "dataset.parquet")
 
 
+def write_partitioned_parquet(rows):
+    df = pd.DataFrame(rows, columns=[
+        "event_id", "user_id", "name", "email", "phone", "address",
+        "country", "signup_date", "event_timestamp", "product",
+        "category", "price", "quantity", "payment_method",
+        "is_fraud", "device", "ip_address", "user_agent", "discount_code"
+    ])
+
+    # Convertir timestamp
+    df["event_timestamp"] = pd.to_datetime(
+        df["event_timestamp"], errors="coerce")
+
+    # Crear columnas de partición
+    df["year"] = df["event_timestamp"].dt.year
+    df["month"] = df["event_timestamp"].dt.month
+    df["day"] = df["event_timestamp"].dt.day
+
+    # Escribir particionado
+    # Registro malo: Escribiendo partición: year=2024.0, month=4.0, day=3.0 con 74 filas
+    for (y, m, d), group in df.groupby(["year", "month", "day"]):
+        print(
+            f"Escribiendo partición: year={y}, month={m}, day={d} con {len(group)} filas")
+        path = f"data/year={y}/month={m:02d}/day={d:02d}"
+        # os.makedirs(path, exist_ok=True)
+#
+        # file_path = f"{path}/data.parquet"
+        # group.to_parquet(file_path, index=False)
+
+
+def write_partitioned():
+    for _ in range(NUM_ROWS // CHUNK_SIZE):
+        rows = [generate_row() for _ in range(CHUNK_SIZE)]
+        write_partitioned_parquet(rows)
+
+
 if __name__ == "__main__":
-    write_parquet()
+    write_partitioned()

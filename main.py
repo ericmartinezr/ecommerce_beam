@@ -7,14 +7,14 @@ logging.basicConfig(
     filename='app.log'
 )
 
-# TODO: Normalizacion
-# TODO: Eliminar emails erroneos
-# TODO: Enmascaramiento
+
 # TODO: Analisis (averiguar libreria para hacerlo local)
 
 
 class Normalization(beam.DoFn):
     def process(self, element):
+        logging.info(f"Normalizing element: {element}")
+
         # Chile, chile, CL > CL
         countries = {
             'chile': 'CL',
@@ -33,11 +33,15 @@ class Normalization(beam.DoFn):
         if element['signup_date'] and 'T' in element['signup_date']:
             element['signup_date'] = element['signup_date'].split('T')[0]
 
+        logging.info(f"Element normalized: {element}")
+
         yield element
 
 
 class Masking(beam.DoFn):
     def process(self, element):
+        logging.info(f"Masking element: {element}")
+
         # Enmascara el email
         if element['email']:
             element['email'] = f'***@***.***'
@@ -53,6 +57,8 @@ class Masking(beam.DoFn):
         # Enmascara el ip_address
         if element['ip_address']:
             element['ip_address'] = '***.***.***.***'
+
+        logging.info(f"Element masked: {element}")
 
         yield element
 
