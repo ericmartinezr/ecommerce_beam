@@ -92,7 +92,7 @@ def run():
 
         # Elimina las transacciones fraudulentas
         filter_fraud = data | "Filter fraudulent transactions" >> beam.Filter(
-            lambda x: x['is_fraud'])
+            lambda x: not x['is_fraud'])
 
         # Elimina las transacciones con precios negativos y cantidades negativas
         filter_negative_price = filter_fraud | "Filter negative prices" >> beam.Filter(
