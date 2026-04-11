@@ -413,6 +413,14 @@ El siguiente gráfico fue generado automáticamente por el `RenderRunner` de Apa
 
 ![Graph del pipeline](ppl_graph.png)
 
----
-> 📝 La documentación de este README fue generada con asistencia de IA y revisada manualmente.
+# Testing
 
+Comando para ejecutar el testing
+
+```sh
+python -m unittest -v ./tests/test_main.py
+```
+
+---
+
+> 📝 La documentación de este README fue generada con asistencia de IA y revisada manualmente.
